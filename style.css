@@ -10,6 +10,7 @@
     --base-transparent-90: rgba(255, 255, 255, 0.9);
     --base-transparent-100: rgba(255, 255, 255, 1);
     --shadow: 0 1px 2px rgba(20, 22, 28, 0.04), 0 8px 24px rgba(20, 22, 28, 0.06);
+    --error-text-color: #b42318;
 }
 
 .dark-theme {
@@ -24,6 +25,7 @@
     --base-transparent-90: rgba(24, 27, 34, 0.9);
     --base-transparent-100: rgba(24, 27, 34, 1);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    --error-text-color: #ffb4ab;
 }
 
 * {
@@ -111,6 +113,24 @@ h1 {
 
 .theme-toggle-btn:hover {
     border-color: var(--brand-color);
+}
+
+/* Storage messages */
+
+.notice, .form-error {
+    color: var(--error-text-color);
+    font-size: 0.9rem;
+}
+
+.notice {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto 16px;
+    padding: 0 20px;
+}
+
+.form-error {
+    margin-bottom: 18px;
 }
 
 /* Entries */

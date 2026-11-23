@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Journaling App</title>
     <link rel="stylesheet" href="style.css">
+    <script src="store.js" defer></script>
     <script src="index.js" defer></script>
 </head>
 
@@ -14,10 +15,12 @@
 <header>
     <h1>Journaling App</h1>
     <div>
-        <button class="add-entry-btn" data-action="new-entry">+ New Entry</button>
+        <button id="addEntryBtn" class="add-entry-btn" data-action="new-entry">+ New Entry</button>
         <button id="themeToggleBtn" class="theme-toggle-btn" data-action="toggle-theme" aria-label="Switch to dark theme">☾</button>
     </div>
 </header>
+
+<p id="pageNotice" class="notice" role="alert" hidden></p>
 
 <main id="entriesContainer" class="entries-grid">
 
@@ -47,6 +50,8 @@
                 <label for="entryContent" class="form-label">Thoughts</label>
                 <textarea id="entryContent" class="form-textarea" placeholder="How was your day?" required></textarea>
             </div>
+
+            <p id="dialogError" class="form-error" role="alert" hidden></p>
 
             <div class="dialog-actions">
                 <button type="button" class="cancel-btn" data-action="close-dialog">Cancel</button>

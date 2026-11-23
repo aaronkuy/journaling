@@ -19,19 +19,43 @@ const dialogTitle = document.getElementById('dialogTitle')
 const titleInput = document.getElementById('entryTitle')
 const contentInput = document.getElementById('entryContent')
 const themeToggleBtn = document.getElementById('themeToggleBtn')
+const addEntryBtn = document.getElementById('addEntryBtn')
+const pageNotice = document.getElementById('pageNotice')
+const dialogError = document.getElementById('dialogError')
 
-function loadEntries() {
-    const savedEntries = localStorage.getItem(STORAGE_KEY)
-    return savedEntries ? JSON.parse(savedEntries) : []
+// localStorage can throw on every access: when site data is blocked, in some
+// private modes, and on write when the quota is used up. Nothing outside
+// these two functions touches it.
+function readStorage(key) {
+    try {
+        return localStorage.getItem(key)
+    } catch {
+        return null
+    }
 }
 
-function saveEntriesToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries))
+function writeStorage(key, value) {
+    try {
+        localStorage.setItem(key, value)
+        return true
+    } catch {
+        return false
+    }
 }
 
-// Millisecond timestamp as id: enough for manual input, not collision-safe.
-function generateId() {
-    return Date.now().toString()
+/**
+ * Writes the new list first and adopts it only if that worked, so memory
+ * and storage never disagree about what was saved.
+ */
+function persistEntries(nextEntries) {
+    if (!writeStorage(STORAGE_KEY, JSON.stringify(nextEntries))) return false
+    entries = nextEntries
+    return true
+}
+
+function showMessage(element, text) {
+    element.textContent = text
+    element.hidden = text === ''
 }
 
 /** Form submit handler: creates a new entry or updates the one being edited. */
@@ -42,24 +66,52 @@ function saveEntry(event) {
     const title = titleInput.value.trim()
     const content = contentInput.value.trim()
 
-    if (editingEntryId) {
-        const entryIndex = entries.findIndex(entry => entry.id === editingEntryId)
-        // Keep the id and any other existing fields.
-        entries[entryIndex] = { ...entries[entryIndex], title, content }
-    } else {
-        // Newest entry first.
-        entries.unshift({ id: generateId(), title, content })
+    // `required` accepts a field that holds only spaces; after trim() that
+    // would be saved as an empty card.
+    const blankField = !title ? titleInput : !content ? contentInput : null
+    if (blankField) {
+        blankField.setCustomValidity('Please write something other than spaces.')
+        blankField.reportValidity()
+        return
     }
 
-    closeEntryDialog()
-    saveEntriesToStorage()
+    // A new entry gets its id once per dialog session, not once per attempt:
+    // if the write fails and the user presses Save again, the retry updates
+    // the same entry instead of adding a second one.
+    editingEntryId ??= createId()
+    const entryId = editingEntryId
+
+    if (!persistEntries(withSavedEntry(entries, { id: entryId, title, content }))) {
+        // Leave the dialog open so the text is still there to copy or retry.
+        showMessage(dialogError, 'The entry could not be saved. The browser storage is full or blocked for this page.')
+        return
+    }
+
     renderEntries()
+    closeEntryDialog()
+    // Rendering replaced the button the dialog would hand focus back to.
+    focusEntryAction(entryId, '.edit-btn')
 }
 
 function deleteEntry(entryId) {
-    entries = entries.filter(entry => entry.id !== entryId)
-    saveEntriesToStorage()
+    const index = entries.findIndex(entry => entry.id === entryId)
+
+    if (!persistEntries(withoutEntry(entries, entryId))) {
+        showMessage(pageNotice, 'The entry could not be deleted. The browser storage is blocked for this page.')
+        return
+    }
+
     renderEntries()
+    // Move focus to the entry that took the deleted one's place.
+    const neighbour = entries[Math.min(index, entries.length - 1)]
+    focusEntryAction(neighbour?.id, '.delete-btn')
+}
+
+/** Focuses a button of the given entry's card, or "New Entry" if the card is gone. */
+function focusEntryAction(entryId, selector) {
+    const card = [...entriesContainer.children].find(element => element.dataset.id === entryId)
+    const target = card?.querySelector(selector) ?? addEntryBtn
+    target.focus()
 }
 
 /**
@@ -102,6 +154,7 @@ function openEntryDialog(entryId = null) {
         dialogTitle.textContent = 'Add New Entry'
         entryForm.reset()
     }
+    showMessage(dialogError, '')
 
     // showModal() makes the rest of the page inert and keeps focus inside the dialog.
     entryDialog.showModal()
@@ -122,7 +175,8 @@ function setTheme(isDark) {
 function toggleTheme() {
     const isDark = !document.body.classList.contains('dark-theme')
     setTheme(isDark)
-    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light')
+    // If this write fails, the theme still switches for the current visit.
+    writeStorage(THEME_KEY, isDark ? 'dark' : 'light')
 }
 
 /**
@@ -156,12 +210,21 @@ function handleClick(event) {
 }
 
 // The script is loaded with `defer`, so the document is parsed at this point.
-setTheme(localStorage.getItem(THEME_KEY) === 'dark')
-entries = loadEntries()
+setTheme(readStorage(THEME_KEY) === 'dark')
+
+const stored = parseEntries(readStorage(STORAGE_KEY))
+entries = stored.entries
+if (!stored.readable) {
+    showMessage(pageNotice, 'Some saved entries could not be read and are not shown. They are replaced the next time an entry is saved or deleted.')
+}
 renderEntries()
 
 document.addEventListener('click', handleClick)
 entryForm.addEventListener('submit', saveEntry)
+entryForm.addEventListener('input', event => {
+    // A custom validity message blocks submitting until it is cleared.
+    event.target.setCustomValidity('')
+})
 entryDialog.addEventListener('click', event => {
     // The dialog has no padding, so a click whose target is the <dialog>
     // element itself, not its content, landed on the backdrop.
