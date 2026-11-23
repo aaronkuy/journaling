@@ -161,15 +161,6 @@ h1 {
     right: 14px;
     display: flex;
     gap: 6px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.15s ease;
-}
-
-.entry-card:hover .entry-actions,
-.entry-card:focus-within .entry-actions {
-    opacity: 1;
-    visibility: visible;
 }
 
 .edit-btn, .delete-btn {
@@ -180,7 +171,7 @@ h1 {
     border: 1px solid var(--line-color);
     border-radius: 8px;
     background: var(--base-transparent-90);
-    color: var(--text-color);
+    color: var(--muted-color);
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
 }

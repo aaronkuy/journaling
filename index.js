@@ -73,6 +73,10 @@ function createEntryCard(entry) {
     card.dataset.id = entry.id
     card.querySelector('.entry-title').textContent = entry.title
     card.querySelector('.entry-content').textContent = entry.content
+    // Name the entry in the button labels so a screen reader user can tell
+    // the buttons of different cards apart.
+    card.querySelector('.edit-btn').setAttribute('aria-label', `Edit entry: ${entry.title}`)
+    card.querySelector('.delete-btn').setAttribute('aria-label', `Delete entry: ${entry.title}`)
     return card
 }
 
@@ -112,6 +116,7 @@ function setTheme(isDark) {
     document.body.classList.toggle('dark-theme', isDark)
     // The icon shows the theme the button switches to.
     themeToggleBtn.textContent = isDark ? ICON_TO_LIGHT : ICON_TO_DARK
+    themeToggleBtn.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme')
 }
 
 function toggleTheme() {
