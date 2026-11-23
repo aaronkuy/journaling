@@ -28,11 +28,9 @@ cd journaling
 open index.html        # macOS; on Linux use xdg-open, on Windows start
 ```
 
-## What I learned
+## Credits
 
-- Managing an array of objects with IDs, `map`, `filter`, `findIndex` and the spread operator
-- Switching one form between "create" and "edit" mode with a single state variable
-- Saving and restoring state across reloads
+This project started from a tutorial for a notes app built with HTML, CSS and JavaScript on top of `localStorage`. The program flow of `index.js` (one array of entries, one dialog for both creating and editing, a theme toggle) follows that tutorial, with "notes" renamed to "entries". The stylesheet was replaced with a new design in October 2026.
 
 ## What I'd do next
 
@@ -42,4 +40,4 @@ open index.html        # macOS; on Linux use xdg-open, on Windows start
 
 ## License
 
-See [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). The copyright notice refers to the changes made in this repository, not to the tutorial code the app started from (see [Credits](#credits)).
