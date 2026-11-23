@@ -2,7 +2,7 @@
 
 A journal in the browser: write, edit and delete entries, stored locally, with a light and dark theme.
 
-![Screenshot of Journaling with two entries](docs/screenshot.png)
+![Screenshot of Journaling with two entries](docs/journaling-two-entries.png)
 
 ## Features
 
