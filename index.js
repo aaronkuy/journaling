@@ -229,8 +229,14 @@ entryForm.addEventListener('input', event => {
     // A custom validity message blocks submitting until it is cleared.
     event.target.setCustomValidity('')
 })
+// The dialog has no padding, so a pointer event whose target is the <dialog>
+// element itself, not its content, landed on the backdrop. The press has to
+// start there too: selecting text in a field and releasing outside the
+// dialog also ends in a click on the <dialog>, and that must not close it.
+let pressStartedOnBackdrop = false
+entryDialog.addEventListener('pointerdown', event => {
+    pressStartedOnBackdrop = event.target === entryDialog
+})
 entryDialog.addEventListener('click', event => {
-    // The dialog has no padding, so a click whose target is the <dialog>
-    // element itself, not its content, landed on the backdrop.
-    if (event.target === entryDialog) closeEntryDialog()
+    if (event.target === entryDialog && pressStartedOnBackdrop) closeEntryDialog()
 })
