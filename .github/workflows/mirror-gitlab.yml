@@ -1,0 +1,63 @@
+name: Mirror to GitLab
+
+# Pushes every branch and tag of this repository to a read-only copy on GitLab.
+# GitLab Free has no pull mirroring, so GitHub pushes over a deploy key with write access.
+
+on:
+  push:
+    branches: ['**']
+    tags: ['**']
+  delete:
+  # Hourly, so branches that do not contain this file are mirrored too.
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One mirror run at a time; a queued run always pushes the latest state.
+concurrency:
+  group: mirror-gitlab
+  cancel-in-progress: false
+
+env:
+  GITLAB_REMOTE: git@gitlab.com:aaronkuyucu/journaling.git
+  # Published fingerprint of gitlab.com's ED25519 host key (docs.gitlab.com/user/gitlab_com/).
+  GITLAB_HOST_KEY_SHA256: SHA256:eUXGGm1YGsMAS7vkcx6JOJdOGHPem5gQp4taiCfCLB8
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Set up SSH for GitLab
+        env:
+          MIRROR_KEY: ${{ secrets.GITLAB_MIRROR_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$MIRROR_KEY" > ~/.ssh/gitlab_mirror
+          chmod 600 ~/.ssh/gitlab_mirror
+          # Only trust the host key if it matches the published fingerprint.
+          ssh-keyscan -t ed25519 gitlab.com > /tmp/gitlab_host 2>/dev/null
+          test "$(ssh-keygen -lf /tmp/gitlab_host | awk '{print $2}')" = "$GITLAB_HOST_KEY_SHA256"
+          cat /tmp/gitlab_host >> ~/.ssh/known_hosts
+
+      - name: Clone from GitHub
+        env:
+          GH_AUTH: ${{ github.token }}
+        run: |
+          auth=$(printf 'x-access-token:%s' "$GH_AUTH" | base64 -w0)
+          git -c http.extraHeader="Authorization: basic $auth" \
+            clone --mirror "https://github.com/${GITHUB_REPOSITORY}.git" repo.git
+          # Pull request refs are GitHub-only and are not mirrored.
+          git -C repo.git for-each-ref --format='%(refname)' refs/pull \
+            | xargs -r -n1 git -C repo.git update-ref -d
+
+      - name: Push branches and tags to GitLab
+        env:
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/gitlab_mirror -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+        run: |
+          # --prune removes branches and tags on GitLab that no longer exist here.
+          git -C repo.git push --prune "$GITLAB_REMOTE" \
+            '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
