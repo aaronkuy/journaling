@@ -155,6 +155,10 @@ function openEntryDialog(entryId = null) {
         entryForm.reset()
     }
     showMessage(dialogError, '')
+    // An "only spaces" message from an earlier attempt survives reset() and
+    // values set from script, and would block saving until the user types.
+    titleInput.setCustomValidity('')
+    contentInput.setCustomValidity('')
 
     // showModal() makes the rest of the page inert and keeps focus inside the dialog.
     entryDialog.showModal()
